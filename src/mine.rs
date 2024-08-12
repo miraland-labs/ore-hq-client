@@ -1,9 +1,9 @@
-use std::{ops::{ControlFlow, Range}, sync::Arc, time::{Duration, Instant, SystemTime, UNIX_EPOCH}};
+use std::{ops::{ControlFlow, Range}, sync::{Arc, RwLock}, time::{Duration, Instant, SystemTime, UNIX_EPOCH}};
 
 use clap::{arg, Parser};
 use drillx::equix;
 use futures_util::{SinkExt, StreamExt};
-use solana_sdk::{signature::{read_keypair_file, Keypair}, signer::Signer};
+use solana_sdk::{signature::Keypair, signer::Signer};
 use tokio::sync::{mpsc::UnboundedSender, Mutex};
 use tokio_tungstenite::{connect_async, tungstenite::{handshake::client::{generate_key, Request}, Message}};
 use base64::prelude::*;
@@ -22,6 +22,15 @@ pub struct MineArgs {
         help = "Number of cores to use while mining"
     )]
     pub cores: u32,
+
+    #[arg(
+        long,
+        short,
+        value_name = "EXPECTED_MIN_DIFFICULTY",
+        help = "The expected min difficulty to submit for miner.",
+        default_value = "18"
+    )]
+    pub expected_min_difficulty: u32,
 }
 
 pub async fn mine(args: MineArgs, key: Keypair, url: String) {
@@ -32,6 +41,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
 
         let sig = key.sign_message(&ts_msg);
 
+        // MI: 172.21.235.113:3000
         let mut ws_url_str = format!("ws://{}", url);
         if ws_url_str.chars().last().unwrap() != '/' {
             ws_url_str.push('/');
@@ -41,6 +51,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
         let url = url::Url::parse(&ws_url_str).expect("Failed to parse server url");
         let host = url.host_str().expect("Invalid host in server url");
         let threads = args.cores;
+        let min_difficulty = args.expected_min_difficulty;
 
 
         let auth = BASE64_STANDARD.encode(format!("{}:{}", key.pubkey(), sig));
@@ -96,12 +107,14 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
                             println!("Received start mining message!");
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
+                            let global_best_difficulty = Arc::new(RwLock::new(0u32));
                             let hash_timer = Instant::now();
                             let core_ids = core_affinity::get_core_ids().unwrap();
                             let nonces_per_thread = 10_000;
-                            let handles = core_ids
+                            let handles: Vec<_> = core_ids
                                 .into_iter()
                                 .map(|i| {
+                                    let global_best_difficulty = Arc::clone(&global_best_difficulty);
                                     std::thread::spawn({
                                         let mut memory = equix::SolverMemory::new();
                                         move || {
@@ -120,15 +133,23 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
 
                                             loop {
                                                 // Create hash
-                                                let hashes = drillx::get_hashes_with_memory(&mut memory, &challenge, &nonce.to_le_bytes());
-
-                                                for hx in hashes {
-                                                    total_hashes += 1;
+                                                total_hashes += 1;
+                                                if let Ok(hx) = drillx::hash_with_memory(
+                                                    &mut memory,
+                                                    &challenge,
+                                                    &nonce.to_le_bytes(),
+                                                ) {
                                                     let difficulty = hx.difficulty();
                                                     if difficulty.gt(&best_difficulty) {
                                                         best_nonce = nonce;
                                                         best_difficulty = difficulty;
                                                         best_hash = hx;
+                                                        // {{ edit_1 }}
+                                                        if best_difficulty.gt(&*global_best_difficulty.read().unwrap())
+                                                        {
+                                                            *global_best_difficulty.write().unwrap() = best_difficulty;
+                                                        }
+                                                        // {{ edit_1 }}
                                                     }
                                                 }
 
@@ -139,7 +160,10 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
 
                                                 if nonce % 100 == 0 {
                                                     if hash_timer.elapsed().as_secs().ge(&cutoff) {
-                                                        if best_difficulty.ge(&8) {
+                                                        let global_best_difficulty =
+                                                            *global_best_difficulty.read().unwrap();
+                                                        // if global_best_difficulty.ge(&18) {
+                                                        if global_best_difficulty.ge(&min_difficulty) {
                                                             break;
                                                         }
                                                     }
@@ -155,7 +179,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
                                         }
                                     })
                                 })
-                                .collect::<Vec<_>>();
+                                .collect();
 
                                 // Join handles and return best nonce
                                 let mut best_nonce: u64 = 0;
