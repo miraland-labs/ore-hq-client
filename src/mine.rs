@@ -104,7 +104,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String) {
                 while let Some(msg) = message_receiver.recv().await {
                     match msg {
                         ServerMessage::StartMining(challenge, nonce_range, cutoff) => {
-                            println!("Received start mining message!");
+                            println!("Received server message to start mining!");
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
                             let global_best_difficulty = Arc::new(RwLock::new(0u32));
