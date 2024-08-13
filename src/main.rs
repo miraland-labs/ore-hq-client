@@ -16,7 +16,8 @@ struct Args {
     #[arg(long,
         value_name = "SERVER_URL",
         help = "URL of the server to connect to",
-        default_value = "orepool.miraland.io",
+        // default_value = "orepool.miraland.io",
+        default_value = "172.21.235.113:3000",
     )]
     url: String,
 
