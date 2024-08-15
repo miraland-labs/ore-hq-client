@@ -1,3 +1,4 @@
+// use claim::ClaimArgs;
 use solana_sdk::signature::read_keypair_file;
 use clap::{Parser, Subcommand};
 
@@ -6,6 +7,9 @@ use signup::signup;
 
 mod signup;
 mod mine;
+// mod claim;
+// mod balance;
+// mod rewards;
 
 // --------------------------------
 
@@ -28,6 +32,14 @@ struct Args {
     )]
     keypair: String,
 
+    #[arg(
+        long,
+        short,
+        action,
+        help = "Use unsecure http connection instead of https.",
+    )]
+    use_http: bool,
+
     #[command(subcommand)]
     command: Commands
 }
@@ -38,6 +50,12 @@ enum Commands {
     Mine(MineArgs),
     #[command(about = "Transfer sol to the pool authority to sign up.")]
     Signup,
+    // #[command(about = "Claim rewards.")]
+    // Claim(ClaimArgs),
+    // #[command(about = "Display claimable rewards.")]
+    // Rewards,
+    // #[command(about = "Display current ore token balance.")]
+    // Balance,
 }
 
 // --------------------------------
@@ -48,14 +66,24 @@ async fn main() {
     let args = Args::parse();
 
     let base_url = args.url;
+    let unsecure_conn = args.use_http;
     let key = read_keypair_file(args.keypair.clone()).expect(&format!("Failed to load keypair from file: {}", args.keypair));
     match args.command {
         Commands::Mine(args) => {
-            mine::mine(args, key, base_url).await;
+            mine::mine(args, key, base_url, unsecure_conn).await;
         },
         Commands::Signup => {
-            signup(base_url, key).await;
-        }
+            signup(base_url, key, unsecure_conn).await;
+        },
+        // Commands::Claim(args) => {
+        //     claim::claim(args, key, base_url, unsecure_conn).await;
+        // }
+        // Commands::Rewards => {
+        //     rewards::rewards(key, base_url, unsecure_conn).await;
+        // }
+        // Commands::Balance => {
+        //     balance::balance(key, base_url, unsecure_conn).await;
+        // }
     }
 
 
