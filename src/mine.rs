@@ -45,16 +45,7 @@ pub struct MineArgs {
 
 pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
     loop {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-
-        let ts_msg = now.to_le_bytes();
-
-        let sig = key.sign_message(&ts_msg);
-
-        // MI: 172.21.235.113:3000
+        let base_url = url.clone();
         let mut ws_url_str = if unsecure {
             format!("ws://{}", url)
         } else {
@@ -65,7 +56,43 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
             ws_url_str.push('/');
         }
 
-        ws_url_str.push_str(&format!("?timestamp={}", now));
+        let client = reqwest::Client::new();
+
+        let http_prefix = if unsecure {
+            "http".to_string()
+        } else {
+            "https".to_string()
+        };
+
+        let timestamp = if let Ok(response) = client
+            .get(format!("{}://{}/timestamp", http_prefix, base_url))
+            .send()
+            .await
+        {
+            if let Ok(ts) = response.text().await {
+                if let Ok(ts) = ts.parse::<u64>() {
+                    ts
+                } else {
+                    println!("Server response body for /timestamp failed to parse, contact admin.");
+                    tokio::time::sleep(Duration::from_secs(3)).await;
+                    continue;
+                }
+            } else {
+                println!("Server response body for /timestamp is empty, contact admin.");
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                continue;
+            }
+        } else {
+            println!("Server restarting, trying again in 3 seconds...");
+            tokio::time::sleep(Duration::from_secs(3)).await;
+            continue;
+        };
+        println!("Server Timestamp: {}", timestamp);
+
+        let ts_msg = timestamp.to_le_bytes();
+        let sig = key.sign_message(&ts_msg);
+
+        ws_url_str.push_str(&format!("?timestamp={}", timestamp));
         let url = url::Url::parse(&ws_url_str).expect("Failed to parse server url");
         let host = url.host_str().expect("Invalid host in server url");
         let threads = args.cores;
@@ -129,6 +156,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
                             let global_best_difficulty = Arc::new(RwLock::new(0u32));
+                            let min_difficulty = Arc::new(min_difficulty);
                             let hash_timer = Instant::now();
                             let core_ids = core_affinity::get_core_ids().unwrap();
                             let nonces_per_thread = 10_000;
@@ -137,6 +165,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                 .map(|i| {
                                     let global_best_difficulty =
                                         Arc::clone(&global_best_difficulty);
+                                    let min_difficulty = Arc::clone(&min_difficulty);
                                     std::thread::spawn({
                                         let mut memory = equix::SolverMemory::new();
                                         move || {
@@ -192,8 +221,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                             *global_best_difficulty.read().unwrap();
                                                         // if global_best_difficulty.ge(&18) {
                                                         if global_best_difficulty
-                                                            .ge(&min_difficulty)
+                                                            .ge(&*min_difficulty)
                                                         {
+                                                            println!("Mining thread reached target: {} >= {}, thread end.", global_best_difficulty, *min_difficulty);
                                                             break;
                                                         }
                                                     }
@@ -267,7 +297,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             }
 
                             tokio::time::sleep(Duration::from_secs(3)).await;
-                            // send new Ready message
+
                             let now = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards")
