@@ -129,6 +129,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
                             let global_best_difficulty = Arc::new(RwLock::new(0u32));
+                            let min_difficulty = Arc::new(min_difficulty);
                             let hash_timer = Instant::now();
                             let core_ids = core_affinity::get_core_ids().unwrap();
                             let nonces_per_thread = 10_000;
@@ -137,6 +138,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                 .map(|i| {
                                     let global_best_difficulty =
                                         Arc::clone(&global_best_difficulty);
+                                    let min_difficulty = Arc::clone(&min_difficulty);
                                     std::thread::spawn({
                                         let mut memory = equix::SolverMemory::new();
                                         move || {
@@ -192,8 +194,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                             *global_best_difficulty.read().unwrap();
                                                         // if global_best_difficulty.ge(&18) {
                                                         if global_best_difficulty
-                                                            .ge(&min_difficulty)
+                                                            .ge(&*min_difficulty)
                                                         {
+                                                            println!("Mining thread reached target: {} >= {}, thread end.", global_best_difficulty, *min_difficulty);
                                                             break;
                                                         }
                                                     }
@@ -267,7 +270,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             }
 
                             tokio::time::sleep(Duration::from_secs(3)).await;
-                            // send new Ready message
+
                             let now = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards")
