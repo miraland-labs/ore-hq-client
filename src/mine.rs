@@ -196,7 +196,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                         if global_best_difficulty
                                                             .ge(&*min_difficulty)
                                                         {
-                                                            println!("Mining thread reached target: {} >= {}, thread end.", global_best_difficulty, *min_difficulty);
+                                                            if i.id == 0 {
+                                                                println!("Found diff {} >= expected diff {}, mission completed.", global_best_difficulty, *min_difficulty);
+                                                            }
                                                             break;
                                                         }
                                                     }
