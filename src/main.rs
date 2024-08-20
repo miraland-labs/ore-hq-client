@@ -1,12 +1,12 @@
 // use claim::ClaimArgs;
-use solana_sdk::signature::read_keypair_file;
 use clap::{Parser, Subcommand};
+use solana_sdk::signature::read_keypair_file;
 
 use mine::MineArgs;
 use signup::signup;
 
-mod signup;
 mod mine;
+mod signup;
 // mod claim;
 // mod balance;
 // mod rewards;
@@ -21,7 +21,7 @@ struct Args {
         value_name = "SERVER_URL",
         help = "URL of the server to connect to",
         // default_value = "orepool.miraland.io",
-        default_value = "172.21.235.113:3000",
+        default_value = "192.168.2.107:3000",
     )]
     url: String,
 
@@ -29,6 +29,7 @@ struct Args {
         long,
         value_name = "KEYPAIR_PATH",
         help = "Filepath to keypair to use",
+        default_value = "~/.config/solana/id.json"
     )]
     keypair: String,
 
@@ -36,12 +37,12 @@ struct Args {
         long,
         short,
         action,
-        help = "Use unsecure http connection instead of https.",
+        help = "Use unsecure http connection instead of https."
     )]
     use_http: bool,
 
     #[command(subcommand)]
-    command: Commands
+    command: Commands,
 }
 
 #[derive(Debug, Subcommand)]
@@ -60,21 +61,23 @@ enum Commands {
 
 // --------------------------------
 
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
 
     let base_url = args.url;
     let unsecure_conn = args.use_http;
-    let key = read_keypair_file(args.keypair.clone()).expect(&format!("Failed to load keypair from file: {}", args.keypair));
+    let key = read_keypair_file(args.keypair.clone()).expect(&format!(
+        "Failed to load keypair from file: {}",
+        args.keypair
+    ));
     match args.command {
         Commands::Mine(args) => {
             mine::mine(args, key, base_url, unsecure_conn).await;
-        },
+        }
         Commands::Signup => {
             signup(base_url, key, unsecure_conn).await;
-        },
+        }
         // Commands::Claim(args) => {
         //     claim::claim(args, key, base_url, unsecure_conn).await;
         // }
@@ -85,7 +88,4 @@ async fn main() {
         //     balance::balance(key, base_url, unsecure_conn).await;
         // }
     }
-
-
 }
-

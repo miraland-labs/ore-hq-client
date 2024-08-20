@@ -1,6 +1,7 @@
 use std::{
     ops::{ControlFlow, Range},
-    sync::{Arc, RwLock},
+    sync::Arc,
+    // sync::{Arc, RwLock},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -43,6 +44,8 @@ pub struct MineArgs {
     pub expected_min_difficulty: u32,
 }
 
+const MIN_DIFF: u32 = 5; // MI, align with server
+
 pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
     loop {
         let now = SystemTime::now()
@@ -69,7 +72,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
         let url = url::Url::parse(&ws_url_str).expect("Failed to parse server url");
         let host = url.host_str().expect("Invalid host in server url");
         let threads = args.cores;
-        let min_difficulty = args.expected_min_difficulty;
+        // let min_difficulty = args.expected_min_difficulty;
 
         let auth = BASE64_STANDARD.encode(format!("{}:{}", key.pubkey(), sig));
 
@@ -128,17 +131,17 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             println!("Received start mining message!");
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
-                            let global_best_difficulty = Arc::new(RwLock::new(0u32));
-                            let min_difficulty = Arc::new(min_difficulty);
+                            // let global_best_difficulty = Arc::new(RwLock::new(0u32));
+                            // let min_difficulty = Arc::new(min_difficulty);
                             let hash_timer = Instant::now();
                             let core_ids = core_affinity::get_core_ids().unwrap();
                             let nonces_per_thread = 10_000;
-                            let handles: Vec<_> = core_ids
+                            let handles = core_ids
                                 .into_iter()
                                 .map(|i| {
-                                    let global_best_difficulty =
-                                        Arc::clone(&global_best_difficulty);
-                                    let min_difficulty = Arc::clone(&min_difficulty);
+                                    // let global_best_difficulty =
+                                    //     Arc::clone(&global_best_difficulty);
+                                    // let min_difficulty = Arc::clone(&min_difficulty);
                                     std::thread::spawn({
                                         let mut memory = equix::SolverMemory::new();
                                         move || {
@@ -156,7 +159,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                             let mut best_hash = drillx::Hash::default();
                                             let mut total_hashes: u64 = 0;
 
-                                            loop {
+                                            'challenge: loop {
                                                 // Create hash
                                                 if let Ok(hx) = drillx::hash_with_memory(
                                                     &mut memory,
@@ -169,17 +172,17 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                         best_nonce = nonce;
                                                         best_difficulty = difficulty;
                                                         best_hash = hx;
-                                                        // {{ edit_1 }}
-                                                        if best_difficulty.gt(
-                                                            &*global_best_difficulty
-                                                                .read()
-                                                                .unwrap(),
-                                                        ) {
-                                                            *global_best_difficulty
-                                                                .write()
-                                                                .unwrap() = best_difficulty;
-                                                        }
-                                                        // {{ edit_1 }}
+                                                        // // {{ edit_1 }}
+                                                        // if best_difficulty.gt(
+                                                        //     &*global_best_difficulty
+                                                        //         .read()
+                                                        //         .unwrap(),
+                                                        // ) {
+                                                        //     *global_best_difficulty
+                                                        //         .write()
+                                                        //         .unwrap() = best_difficulty;
+                                                        // }
+                                                        // // {{ edit_1 }}
                                                     }
                                                 }
 
@@ -190,17 +193,21 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
 
                                                 if nonce % 100 == 0 {
                                                     if hash_timer.elapsed().as_secs().ge(&cutoff) {
-                                                        let global_best_difficulty =
-                                                            *global_best_difficulty.read().unwrap();
-                                                        // if global_best_difficulty.ge(&18) {
-                                                        if global_best_difficulty
-                                                            .ge(&*min_difficulty)
-                                                        {
-                                                            if i.id == 0 {
-                                                                println!("Found diff {} >= expected diff {}, mission completed.", global_best_difficulty, *min_difficulty);
-                                                            }
-                                                            break;
+                                                        if best_difficulty.ge(&MIN_DIFF) {
+                                                            break 'challenge;
                                                         }
+                                                        // let global_best_difficulty =
+                                                        //     *global_best_difficulty.read().unwrap();
+                                                        // // if global_best_difficulty.ge(&18) {
+                                                        // if global_best_difficulty
+                                                        //     .ge(&*min_difficulty)
+                                                        // {
+                                                        //     // found diff
+                                                        //     if i.id == 0 {
+                                                        //         println!("Found diff {} >= expected diff {}, mission completed.", global_best_difficulty, *min_difficulty);
+                                                        //     }
+                                                        //     break 'challenge;
+                                                        // }
                                                     }
                                                 }
 
@@ -218,7 +225,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                         }
                                     })
                                 })
-                                .collect();
+                                .collect::<Vec<_>>();
 
                             // Join handles and return best nonce
                             let mut best_nonce: u64 = 0;
@@ -273,6 +280,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
 
                             tokio::time::sleep(Duration::from_secs(3)).await;
 
+                            // send new Ready message
                             let now = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards")
