@@ -1575,6 +1575,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
+name = "marsh-drillx"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "468fa1e06e14fc13f928daa91a64c1d5724268c9c39b15a333db619d5fe6460d"
+dependencies = [
+ "equix",
+ "serde",
+ "sha3 0.10.8",
+ "strum",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1835,14 +1847,14 @@ dependencies = [
 
 [[package]]
 name = "ore-hq-client"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "base64 0.22.1",
  "bincode",
  "clap",
  "core_affinity",
- "drillx",
  "futures-util",
+ "marsh-drillx",
  "ore-api",
  "ore-utils",
  "reqwest",
