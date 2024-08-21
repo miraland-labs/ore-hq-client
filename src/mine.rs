@@ -161,7 +161,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
 
                                             'challenge: loop {
                                                 // Create hash
-                                                if let Ok(hx) = drillx::hash_with_memory(
+                                                // MI
+                                                // if let Ok(hx) = drillx::hash_with_memory(
+                                                for hx in  drillx::get_hashes_with_memory(
                                                     &mut memory,
                                                     &challenge,
                                                     &nonce.to_le_bytes(),
@@ -250,6 +252,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             println!("Found best diff: {}", best_difficulty);
                             println!("Processed: {}", total_nonces_checked);
                             println!("Hash time: {:?}", hash_time);
+                            println!("Hashpower: {:?} H/s", total_nonces_checked.saturating_div(hash_time.as_secs()));
 
                             let message_type = 2u8; // 1 u8 - BestSolution Message
                             let best_hash_bin = best_hash.d; // 16 u8
