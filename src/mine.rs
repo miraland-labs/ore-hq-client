@@ -33,15 +33,14 @@ pub struct MineArgs {
         help = "Number of cores to use while mining"
     )]
     pub cores: u32,
-
-    #[arg(
-        long,
-        short,
-        value_name = "EXPECTED_MIN_DIFFICULTY",
-        help = "The expected min difficulty to submit for miner.",
-        default_value = "18"
-    )]
-    pub expected_min_difficulty: u32,
+    //     #[arg(
+    //         long,
+    //         short,
+    //         value_name = "EXPECTED_MIN_DIFFICULTY",
+    //         help = "The expected min difficulty to submit for miner.",
+    //         default_value = "18"
+    //     )]
+    //     pub expected_min_difficulty: u32,
 }
 
 const MIN_DIFF: u32 = 5; // MI, align with server

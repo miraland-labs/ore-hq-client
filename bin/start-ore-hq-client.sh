@@ -24,12 +24,18 @@ EXP_MIN_DIFF=18
 
 # bash -c "$CMD"
 
+# CMD="$CLI \
+#         --use-http \
+#         --url 192.168.2.107:3000 \
+#         --keypair $MKP \
+#         mine --cores $CORES \
+#         --expected-min-difficulty $EXP_MIN_DIFF"
+
 CMD="$CLI \
         --use-http \
         --url 192.168.2.107:3000 \
         --keypair $MKP \
-        mine --cores $CORES \
-        --expected-min-difficulty $EXP_MIN_DIFF"
+        protomine --cores $CORES"
 
 echo $CMD
 until bash -c "$CMD"; do

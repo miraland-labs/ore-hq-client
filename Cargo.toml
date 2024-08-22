@@ -1,11 +1,15 @@
 [package]
-name = "ore-hq-client"
-version = "0.4.0"
+name = "more-hq-client"
+version = "0.5.0"
 edition = "2021"
-description = "Ore mining pool client."
+description = "Miraland release of Ore mining pool client."
 license = "Apache-2.0"
-repository = "https://github.com/Kriptikz/ore-hq-client"
-keywords = ["solana", "crypto", "mining", "client", "mining-pool"]
+repository = "https://github.com/miraland-labs/ore-hq-client"
+keywords = ["solana", "crypto", "mining", "miraland", "mining-pool"]
+
+[[bin]]
+name = "ore-hq-client"
+path = "src/main.rs"
 
 [dependencies]
 base64 = "0.22.1"
@@ -25,3 +29,20 @@ tokio = { version = "1.39.2", features = ["full"] }
 tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
 url = "2.5.2"
 spl-token = "6.0.0"
+rayon = "1.10"
+crossbeam = "0.8.0"
+rand = "0.8.4"
+rand_chacha = "0.3.0"
+
+[profile.release]
+opt-level = 3           # Full optimisations
+codegen-units = 1       # Better optimization with fewer codegen units
+lto = true              # Enable Link Time Optimization (LTO)
+debug = false           # Disable debug info to reduce binary size
+panic = 'abort'         # Reduces the binary size further by not including unwinding information
+rpath = false
+incremental = false
+overflow-checks = false
+
+[build]
+rustflags = ["-C", "target-cpu=native"]

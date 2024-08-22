@@ -2,10 +2,10 @@
 use clap::{Parser, Subcommand};
 use solana_sdk::signature::read_keypair_file;
 
-use mine::MineArgs;
 use signup::signup;
 
 mod mine;
+mod protomine;
 mod signup;
 // mod claim;
 // mod balance;
@@ -17,7 +17,8 @@ mod signup;
 #[derive(Parser, Debug)]
 #[command(version, author, about, long_about = None)]
 struct Args {
-    #[arg(long,
+    #[arg(
+        long,
         value_name = "SERVER_URL",
         help = "URL of the server to connect to",
         // default_value = "orepool.miraland.io",
@@ -47,8 +48,10 @@ struct Args {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    #[command(about = "Connect to pool and start mining.")]
-    Mine(MineArgs),
+    #[command(about = "Connect to pool and start mining. (Default Implementation)")]
+    Mine(mine::MineArgs),
+    #[command(about = "Connect to pool and start mining. (Protomine Implementation)")]
+    Protomine(protomine::MineArgs),
     #[command(about = "Transfer sol to the pool authority to sign up.")]
     Signup,
     // #[command(about = "Claim rewards.")]
@@ -75,17 +78,19 @@ async fn main() {
         Commands::Mine(args) => {
             mine::mine(args, key, base_url, unsecure_conn).await;
         }
+        Commands::Protomine(args) => {
+            protomine::mine(args, key, base_url, unsecure_conn).await;
+        }
         Commands::Signup => {
             signup(base_url, key, unsecure_conn).await;
-        }
-        // Commands::Claim(args) => {
-        //     claim::claim(args, key, base_url, unsecure_conn).await;
-        // }
-        // Commands::Rewards => {
-        //     rewards::rewards(key, base_url, unsecure_conn).await;
-        // }
-        // Commands::Balance => {
-        //     balance::balance(key, base_url, unsecure_conn).await;
-        // }
+        } // Commands::Claim(args) => {
+          //     claim::claim(args, key, base_url, unsecure_conn).await;
+          // }
+          // Commands::Rewards => {
+          //     rewards::rewards(key, base_url, unsecure_conn).await;
+          // }
+          // Commands::Balance => {
+          //     balance::balance(key, base_url, unsecure_conn).await;
+          // }
     }
 }
