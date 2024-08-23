@@ -50,10 +50,12 @@ struct MiningResult {
     nonces_checked: u64,
 }
 
+// MI, add param start_nonce
 impl MiningResult {
-    fn new() -> Self {
+    fn new(start_nonce: u64) -> Self {
         MiningResult {
-            nonce: 0,
+            // nonce: 0,
+            nonce: start_nonce,
             difficulty: 0,
             hash: drillx::Hash::default(),
             nonces_checked: 0,
@@ -103,7 +105,8 @@ fn optimized_mining_rayon(
                 core_start + core_range_size
             };
 
-            let mut core_best = MiningResult::new();
+            // let mut core_best = MiningResult::new();
+            let mut core_best = MiningResult::new(core_start);
             let mut local_nonces_checked = 0;
 
             'outer: for chunk_start in (core_start..core_end).step_by(chunk_size as usize) {
@@ -159,7 +162,8 @@ fn optimized_mining_rayon(
                 acc
             }
         })
-        .unwrap_or_else(MiningResult::new);
+        // .unwrap_or_else(MiningResult::new);
+        .unwrap_or(MiningResult::new(nonce_range.start));
 
     (
         best_result.nonce,
