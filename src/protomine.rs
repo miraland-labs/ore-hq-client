@@ -134,7 +134,8 @@ fn optimized_mining_rayon(
                         }
                     }
 
-                    if nonce % 100 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
+                    // if nonce % 100 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
+                    if nonce % 50 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
                         // if core_best.difficulty >= 8 {
                         if core_best.difficulty >= MIN_DIFF {
                             break 'outer;
