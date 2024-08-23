@@ -1607,9 +1607,9 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "marsh-drillx"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "468fa1e06e14fc13f928daa91a64c1d5724268c9c39b15a333db619d5fe6460d"
+checksum = "6c9a725c7af07a14ee2f5e52af08fcaa399793762178132051f0fd99c858a4ac"
 dependencies = [
  "equix",
  "serde",

@@ -84,7 +84,6 @@ fn optimized_mining_rayon(
     INIT_RAYON.call_once(|| {
         rayon::ThreadPoolBuilder::new()
             .num_threads(cores)
-            // .num_threads(cores * 5)
             .build_global()
             .expect("Failed to initialize global thread pool");
     });
@@ -119,7 +118,7 @@ fn optimized_mining_rayon(
                     }
 
                     for hx in
-                        drillx::get_hashes_with_memory(&mut memory, challenge, &nonce.to_le_bytes())
+                        drillx::hashes_with_memory(&mut memory, challenge, &nonce.to_le_bytes())
                     {
                         local_nonces_checked += 1;
                         let difficulty = hx.difficulty();

@@ -19,7 +19,7 @@ core_affinity = "0.8.1"
 ore-api = "2.1.0"
 ore-utils = "2.1.0"
 # drillx = "2.0.0"
-drillx = { package = "marsh-drillx", version = "2.0.1" }
+drillx = { package = "marsh-drillx", version = "2.1.0" }
 # drillx = { path = "../../regolith-labs/forks/drillx/drillx" }
 futures-util = "0.3.30"
 reqwest = "^0.11.0"

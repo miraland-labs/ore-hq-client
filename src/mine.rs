@@ -130,17 +130,12 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             println!("Received start mining message!");
                             println!("Mining starting...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
-                            // let global_best_difficulty = Arc::new(RwLock::new(0u32));
-                            // let min_difficulty = Arc::new(min_difficulty);
                             let hash_timer = Instant::now();
                             let core_ids = core_affinity::get_core_ids().unwrap();
                             let nonces_per_thread = 10_000;
                             let handles = core_ids
                                 .into_iter()
                                 .map(|i| {
-                                    // let global_best_difficulty =
-                                    //     Arc::clone(&global_best_difficulty);
-                                    // let min_difficulty = Arc::clone(&min_difficulty);
                                     std::thread::spawn({
                                         let mut memory = equix::SolverMemory::new();
                                         move || {
@@ -159,10 +154,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                             let mut total_hashes: u64 = 0;
 
                                             'challenge: loop {
-                                                // Create hash
-                                                // MI
-                                                // if let Ok(hx) = drillx::hash_with_memory(
-                                                for hx in drillx::get_hashes_with_memory(
+                                                for hx in drillx::hashes_with_memory(
                                                     &mut memory,
                                                     &challenge,
                                                     &nonce.to_le_bytes(),
@@ -173,17 +165,6 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                         best_nonce = nonce;
                                                         best_difficulty = difficulty;
                                                         best_hash = hx;
-                                                        // // {{ edit_1 }}
-                                                        // if best_difficulty.gt(
-                                                        //     &*global_best_difficulty
-                                                        //         .read()
-                                                        //         .unwrap(),
-                                                        // ) {
-                                                        //     *global_best_difficulty
-                                                        //         .write()
-                                                        //         .unwrap() = best_difficulty;
-                                                        // }
-                                                        // // {{ edit_1 }}
                                                     }
                                                 }
 
@@ -199,18 +180,6 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                         if best_difficulty.ge(&MIN_DIFF) {
                                                             break 'challenge;
                                                         }
-                                                        // let global_best_difficulty =
-                                                        //     *global_best_difficulty.read().unwrap();
-                                                        // // if global_best_difficulty.ge(&18) {
-                                                        // if global_best_difficulty
-                                                        //     .ge(&*min_difficulty)
-                                                        // {
-                                                        //     // found diff
-                                                        //     if i.id == 0 {
-                                                        //         println!("Found diff {} >= expected diff {}, mission completed.", global_best_difficulty, *min_difficulty);
-                                                        //     }
-                                                        //     break 'challenge;
-                                                        // }
                                                     }
                                                 }
 
@@ -287,9 +256,17 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             {
                                 let mut message_sender = message_sender.lock().await;
                                 let _ = message_sender.send(Message::Binary(bin_vec)).await;
+                                // MI
+                                drop(message_sender);
+
+                                // let lock = message_sender.lock().await;
+                                // let _ = lock.send(Message::Binary(bin_vec)).await;
+                                // drop(lock);
                             }
 
-                            tokio::time::sleep(Duration::from_secs(3)).await;
+                            // MI, vanilla
+                            // tokio::time::sleep(Duration::from_secs(3)).await;
+                            tokio::time::sleep(Duration::from_millis(1_000)).await;
 
                             // send new Ready message
                             let now = SystemTime::now()
@@ -306,8 +283,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                             bin_data.extend(sig);
                             {
                                 let mut message_sender = message_sender.lock().await;
-
                                 let _ = message_sender.send(Message::Binary(bin_data)).await;
+                                // MI
+                                drop(message_sender);
                             }
                         }
                     }
