@@ -255,6 +255,8 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                 while let Some(msg) = message_receiver.recv().await {
                     match msg {
                         ServerMessage::StartMining(challenge, nonce_range, cutoff) => {
+                            // MI, intercept cutoff
+                            let cutoff = if cutoff > 2 { cutoff - 2 } else { cutoff };
                             println!("Received start mining message!");
                             println!("Mining starting (Using Protomine)...");
                             println!("Nonce range: {} - {}", nonce_range.start, nonce_range.end);
