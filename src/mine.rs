@@ -173,9 +173,7 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
                                                     break;
                                                 }
 
-                                                // MI, vanilla
-                                                // if nonce % 100 == 0 {
-                                                if nonce % 50 == 0 {
+                                                if nonce % 100 == 0 {
                                                     if hash_timer.elapsed().as_secs().ge(&cutoff) {
                                                         if best_difficulty.ge(&MIN_DIFF) {
                                                             break 'challenge;

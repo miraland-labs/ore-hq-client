@@ -112,9 +112,10 @@ fn optimized_mining_rayon(
             'outer: for chunk_start in (core_start..core_end).step_by(chunk_size as usize) {
                 let chunk_end = (chunk_start + chunk_size).min(core_end);
                 for nonce in chunk_start..chunk_end {
-                    if start_time.elapsed().as_secs() >= cutoff_time {
-                        break 'outer;
-                    }
+                    // MI, vanilla, duplicated with below % 100 part, cause default solution returned without any calc.
+                    // if start_time.elapsed().as_secs() >= cutoff_time {
+                    //     break 'outer;
+                    // }
 
                     if stop_signal.load(Ordering::Relaxed) {
                         break 'outer;
@@ -136,8 +137,7 @@ fn optimized_mining_rayon(
                         }
                     }
 
-                    // if nonce % 100 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
-                    if nonce % 50 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
+                    if nonce % 100 == 0 && start_time.elapsed().as_secs() >= cutoff_time {
                         // if core_best.difficulty >= 8 {
                         if core_best.difficulty >= MIN_DIFF {
                             break 'outer;
