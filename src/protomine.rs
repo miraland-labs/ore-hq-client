@@ -303,7 +303,9 @@ pub async fn mine(args: MineArgs, key: Keypair, url: String, unsecure: bool) {
 
                             let _ = sender.send(Message::Binary(bin_data)).await;
 
-                            tokio::time::sleep(Duration::from_secs(3)).await;
+                            // MI, vanilla 3 seconds
+                            // tokio::time::sleep(Duration::from_secs(3)).await;
+                            tokio::time::sleep(Duration::from_secs(1)).await;
 
                             let now = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
